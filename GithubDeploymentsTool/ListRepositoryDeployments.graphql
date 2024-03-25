@@ -1,0 +1,23 @@
+﻿query repository ($owner: String!, $name: String!, $followRenames: Boolean, $environments: [String!]) {
+    repository (owner: $owner, name: $name, followRenames: $followRenames) {
+        name
+        visibility
+
+        deployments(environments: $environments, first: 10, orderBy: {field: CREATED_AT, direction: DESC}) {
+            edges {
+                cursor
+                node {
+                    id
+                    ref {
+                        name
+                        prefix
+                    }
+                    state
+                    commit {
+                        oid
+                    }
+                }
+            }
+        }
+    }
+}
