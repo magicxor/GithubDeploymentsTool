@@ -64,21 +64,22 @@ public static class Program
                     .ValidateDataAnnotations()
                     .ValidateOnStart();
 
-                services
-                    .AddGithubClient()
-                    .ConfigureHttpClient((serviceProvider, httpClient) =>
+                services.AddScoped<HttpAcceptHeaderHandler>();
+                services.AddScoped<HttpAuthTokenHandler>();
+                services.AddScoped<HttpLoggingHandler>();
+
+                services.AddHttpClient(GithubClient.ClientName, (_, httpClient) =>
                     {
-                        var options = serviceProvider.GetRequiredService<IOptions<AppOptions>>().Value;
-                        var token = options.List?.Token ?? options.Create?.Token;
-
                         httpClient.BaseAddress = new Uri("https://api.github.com/graphql");
+                        httpClient.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("GithubDeploymentsTool", "1.0"));
+                    })
+                    .AddPolicyHandler(HttpPolicyProvider.GithubCombinedPolicy)
+                    .AddHttpMessageHandler<HttpAcceptHeaderHandler>()
+                    .AddHttpMessageHandler<HttpAuthTokenHandler>()
+                    .AddHttpMessageHandler<HttpLoggingHandler>()
+                    .AddDefaultLogger();
 
-                        // use preview schema
-                        // https://docs.github.com/en/graphql/overview/schema-previews#deployments-preview
-                        httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github.flash-preview+json"));
-                        httpClient.DefaultRequestHeaders.Authorization =
-                            new AuthenticationHeaderValue("Bearer", token);
-                    });
+                services.AddGithubClient();
 
                 services.AddSingleton<TimeProvider>(_ => TimeProvider.System);
                 services.AddScoped<Worker>();
