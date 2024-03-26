@@ -2,5 +2,5 @@
 
 public enum OptionSections
 {
-    GithubDeploymentsToolOptions,
+    GithubDeploymentsTool,
 }

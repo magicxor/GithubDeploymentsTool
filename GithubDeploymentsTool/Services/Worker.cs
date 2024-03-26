@@ -1,19 +1,31 @@
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
+using GithubDeploymentsTool.Models;
+using Microsoft.Extensions.Options;
 
 namespace GithubDeploymentsTool.Services;
 
-public sealed class Worker : BackgroundService
+public sealed class Worker
 {
-    private readonly IServiceScopeFactory _serviceScopeFactory;
+    private readonly IOptions<AppOptions> _githubDeploymentsToolOptions;
+    private readonly IGithubClient _githubClient;
 
-    public Worker(IServiceScopeFactory serviceScopeFactory)
+    public Worker(IOptions<AppOptions> githubDeploymentsToolOptions,
+        IGithubClient githubClient)
     {
-        _serviceScopeFactory = serviceScopeFactory;
+        _githubDeploymentsToolOptions = githubDeploymentsToolOptions;
+        _githubClient = githubClient;
     }
 
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    public async Task ListDeploymentsAsync(CancellationToken cancellationToken = default)
     {
-        using var serviceScope = _serviceScopeFactory.CreateScope();
+        var args = _githubDeploymentsToolOptions.Value.List ?? throw new Exception("List options not set");
+        var response = await _githubClient.Repository
+            .ExecuteAsync(args.Owner, args.Repository, true, [args.Environment], cancellationToken);
+        Console.WriteLine("Deployments found: " + response.Data?.Repository?.Deployments.Edges?.Count);
+    }
+
+    public async Task CreateDeploymentAsync(CancellationToken cancellationToken = default)
+    {
+        var args = _githubDeploymentsToolOptions.Value.Create ?? throw new Exception("Create options not set");
+        throw new NotImplementedException();
     }
 }

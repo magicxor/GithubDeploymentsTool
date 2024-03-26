@@ -3,7 +3,7 @@
         name
         visibility
 
-        deployments(environments: $environments, first: 10, orderBy: {field: CREATED_AT, direction: DESC}) {
+        deployments(environments: $environments, first: 100, orderBy: {field: CREATED_AT, direction: DESC}) {
             edges {
                 cursor
                 node {
@@ -13,6 +13,7 @@
                         prefix
                     }
                     state
+                    task
                     commit {
                         oid
                     }
