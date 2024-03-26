@@ -1,0 +1,12 @@
+query repository ($owner: String!, $name: String!, $followRenames: Boolean) {
+    repository (owner: $owner, name: $name, followRenames: $followRenames) {
+        homepageUrl
+        id
+        isArchived
+        isPrivate
+        name
+        nameWithOwner
+        url
+        visibility
+    }
+}

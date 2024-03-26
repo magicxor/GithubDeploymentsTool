@@ -72,6 +72,10 @@ public static class Program
                         var token = options.List?.Token ?? options.Create?.Token;
 
                         httpClient.BaseAddress = new Uri("https://api.github.com/graphql");
+
+                        // use preview schema
+                        // https://docs.github.com/en/graphql/overview/schema-previews#deployments-preview
+                        httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github.flash-preview+json"));
                         httpClient.DefaultRequestHeaders.Authorization =
                             new AuthenticationHeaderValue("Bearer", token);
                     });

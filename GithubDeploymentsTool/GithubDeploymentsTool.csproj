@@ -32,4 +32,10 @@
       <PackageReference Include="StrawberryShake.Transport.WebSockets" Version="13.9.0" />
     </ItemGroup>
 
+    <ItemGroup>
+      <GraphQL Update="CreateRepositoryDeployment.graphql">
+        <Generator>MSBuild:GenerateGraphQLCode</Generator>
+      </GraphQL>
+    </ItemGroup>
+
 </Project>

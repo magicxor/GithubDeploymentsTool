@@ -1,6 +1,12 @@
-﻿query repository ($owner: String!, $name: String!, $followRenames: Boolean, $environments: [String!]) {
+﻿query repositoryDeployments ($owner: String!, $name: String!, $followRenames: Boolean, $environments: [String!]) {
     repository (owner: $owner, name: $name, followRenames: $followRenames) {
+        homepageUrl
+        id
+        isArchived
+        isPrivate
         name
+        nameWithOwner
+        url
         visibility
 
         deployments(environments: $environments, first: 100, orderBy: {field: CREATED_AT, direction: DESC}) {
@@ -8,14 +14,29 @@
                 cursor
                 node {
                     id
+                    environment
                     ref {
-                        name
+                        id
                         prefix
+                        name
                     }
-                    state
                     task
+                    payload
+                    description
+                    state
+                    latestStatus {
+                        id
+                        state
+                    }
                     commit {
                         oid
+                        message
+                        committedDate
+                        author {
+                            user {
+                                login
+                            }
+                        }
                     }
                 }
             }

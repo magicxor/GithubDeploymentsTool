@@ -1,0 +1,31 @@
+﻿mutation createRepositoryDeployment($input: CreateDeploymentInput!) {
+  createDeployment(input: $input) {
+    deployment {
+      id
+      environment
+      ref {
+        id
+        prefix
+        name
+      }
+      task
+      payload
+      description
+      state
+      latestStatus {
+        id
+        state
+      }
+      commit {
+        oid
+        message
+        committedDate
+        author {
+          user {
+            login
+          }
+        }
+      }
+    }
+  }
+}
