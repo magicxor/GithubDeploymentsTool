@@ -33,7 +33,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <GraphQL Update="CreateRepositoryDeployment.graphql">
+      <GraphQL Update="CreateDeployment.graphql">
         <Generator>MSBuild:GenerateGraphQLCode</Generator>
       </GraphQL>
     </ItemGroup>

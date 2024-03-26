@@ -1,4 +1,4 @@
-﻿mutation createRepositoryDeployment($input: CreateDeploymentInput!) {
+﻿mutation createDeployment($input: CreateDeploymentInput!) {
   createDeployment(input: $input) {
     deployment {
       id
