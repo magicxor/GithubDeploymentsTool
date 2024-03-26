@@ -2,6 +2,7 @@ using System.Text.Json;
 using GithubDeploymentsTool.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using StrawberryShake;
 
 namespace GithubDeploymentsTool.Services;
 
@@ -58,10 +59,21 @@ public sealed class Worker
             RepositoryId = repositoryId,
         }, cancellationToken);
 
-        _logger.LogInformation("Deployment created successfully. Id: {DeploymentId}, Environment: {Environment}, Description: {Description}, Task: {Task}",
-            deploymentResponse.Data?.CreateDeployment?.Deployment?.Id,
-            deploymentResponse.Data?.CreateDeployment?.Deployment?.Environment,
-            deploymentResponse.Data?.CreateDeployment?.Deployment?.Description,
-            deploymentResponse.Data?.CreateDeployment?.Deployment?.Task);
+        var isErrorResult = deploymentResponse.IsErrorResult();
+        var errors = deploymentResponse.Errors;
+
+        if (isErrorResult)
+        {
+            _logger.LogError("Error creating deployment. Errors: {Errors}",
+                JsonSerializer.Serialize(errors, JsonSerializerOptions));
+        }
+        else
+        {
+            _logger.LogInformation("Deployment created successfully. Id: {DeploymentId}, Environment: {Environment}, Description: {Description}, Task: {Task}",
+                deploymentResponse.Data?.CreateDeployment?.Deployment?.Id,
+                deploymentResponse.Data?.CreateDeployment?.Deployment?.Environment,
+                deploymentResponse.Data?.CreateDeployment?.Deployment?.Description,
+                deploymentResponse.Data?.CreateDeployment?.Deployment?.Task);
+        }
     }
 }
