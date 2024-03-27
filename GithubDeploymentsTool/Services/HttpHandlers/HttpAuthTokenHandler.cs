@@ -11,11 +11,15 @@ public class HttpAuthTokenHandler : DelegatingHandler
 
     public HttpAuthTokenHandler(IOptions<AppOptions> appOptions)
     {
+        ArgumentNullException.ThrowIfNull(appOptions);
+
         _appOptions = appOptions.Value;
     }
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(request);
+
         var token = _appOptions.GetToken();
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
         return await base.SendAsync(request, cancellationToken);

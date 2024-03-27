@@ -1,4 +1,5 @@
-﻿using System.Net.Http.Headers;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Net.Http.Headers;
 using CommandLine;
 using GithubDeploymentsTool.Enums;
 using GithubDeploymentsTool.Extensions;
@@ -25,6 +26,7 @@ public static class Program
 
     private static readonly LoggingConfiguration LoggingConfiguration = new XmlLoggingConfiguration("nlog.config");
 
+    [SuppressMessage("Minor Code Smell", "S1075:URIs should not be hardcoded", Justification = "This is a constant value")]
     private static IHost BuildHost(AppOptions appOptions)
     {
         return Host.CreateDefaultBuilder()
@@ -40,7 +42,7 @@ public static class Program
                             $"{nameof(OptionSections.GithubDeploymentsTool)}:{nameof(AppOptions.List)}:{prop}",
                             appOptions.List[prop])));
                 }
-                
+
                 if (appOptions.Create != null)
                 {
                     config.AddInMemoryCollection(typeof(CreateDeploymentOptions)
@@ -94,6 +96,8 @@ public static class Program
         return worker;
     }
 
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Host is disposed by the caller")]
+    [SuppressMessage("Blocker Bug", "S2930:\"IDisposables\" should be disposed", Justification = "Host is disposed by the caller")]
     private static async Task<int> OnParsedAsync(AppOptions appOptions)
     {
         var cancelTokenSource = new CancellationTokenSource();
@@ -128,6 +132,7 @@ public static class Program
         return Task.FromResult(ErrorBadArguments);
     }
 
+    [SuppressMessage("Major Code Smell", "S2139:Exceptions should be either logged or rethrown but not both", Justification = "This is an entry point")]
     public static async Task<int> Main(string[] args)
     {
         // NLog: setup the logger first to catch all errors
@@ -143,8 +148,8 @@ public static class Program
             var exitCode = await parser
                 .ParseArguments<ListDeploymentsOptions, CreateDeploymentOptions>(args)
                 .MapResult<ListDeploymentsOptions, CreateDeploymentOptions, Task<int>>(
-                    OnListVerbAsync, 
-                    OnCreateVerbAsync, 
+                    OnListVerbAsync,
+                    OnCreateVerbAsync,
                     OnNotParsedAsync);
             return exitCode;
         }

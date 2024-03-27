@@ -6,6 +6,8 @@ public static class TypeExtensions
 {
     public static IReadOnlyCollection<string> ListProperties(this Type type)
     {
+        ArgumentNullException.ThrowIfNull(type);
+
         return type
             .GetProperties(BindingFlags.Instance | BindingFlags.Public)
             .Where(p => p.GetIndexParameters().Length == 0)

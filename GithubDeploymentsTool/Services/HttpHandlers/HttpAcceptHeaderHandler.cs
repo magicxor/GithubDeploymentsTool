@@ -9,6 +9,8 @@ public class HttpAcceptHeaderHandler : DelegatingHandler
         // use preview schema
         // https://docs.github.com/en/graphql/overview/schema-previews#deployments-preview
 
+        ArgumentNullException.ThrowIfNull(request);
+
         request.Headers.Accept.Clear();
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/vnd.github.flash-preview+json"));
 

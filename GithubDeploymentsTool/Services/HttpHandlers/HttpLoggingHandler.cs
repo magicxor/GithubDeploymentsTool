@@ -13,6 +13,8 @@ public class HttpLoggingHandler : DelegatingHandler
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(request);
+
         var requestContent = request.Content != null ? await request.Content?.ReadAsStringAsync(cancellationToken)! : string.Empty;
         _logger.LogDebug("{RequestName}:\r\n{Request}\r\n{RequestContent}", nameof(request), request, requestContent);
 

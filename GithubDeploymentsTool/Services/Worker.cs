@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Text.Json;
+using GithubDeploymentsTool.Exceptions;
 using GithubDeploymentsTool.Models.Options;
 using GithubDeploymentsTool.Models.Options.CommandLine;
 using GithubDeploymentsTool.Models.Results;
@@ -43,8 +44,8 @@ public sealed class Worker
             );
         }
 
-        var nodes = response.Data?.Repository?.Deployments.Edges?
-            .Select(edge => edge?.Node)
+        var nodes = response.Data?.Repository?.Deployments.Edges
+            ?.Select(edge => edge?.Node)
             .Where(node => node != null
                            && node.Environment == options.Environment
                            && $"{node.Ref?.Prefix}{node.Ref?.Name}" == options.Ref
@@ -63,7 +64,7 @@ public sealed class Worker
 
     public async Task<int> ListDeploymentsAsync(CancellationToken cancellationToken = default)
     {
-        var options = _githubDeploymentsToolOptions.Value.List ?? throw new Exception($"{nameof(AppOptions)}.{nameof(AppOptions.List)} not set");
+        var options = _githubDeploymentsToolOptions.Value.List ?? throw new ServiceException($"{nameof(AppOptions)}.{nameof(AppOptions.List)} not set");
 
         var result = await ListDeploymentsInnerAsync(options, cancellationToken);
 
@@ -101,9 +102,9 @@ public sealed class Worker
         var repositoryRefId = repoCommitResponse.Data?.Repository?.Ref?.Id;
 
         if (repositoryId == null)
-            throw new Exception("Repository.Id is null");
+            throw new ServiceException("Repository.Id is null");
         if (repositoryRefId == null)
-            throw new Exception("Repository.Ref.Id is null");
+            throw new ServiceException("Repository.Ref.Id is null");
 
         var deploymentResponse = await _githubClient.CreateDeployment.ExecuteAsync(new CreateDeploymentInput
         {
@@ -127,7 +128,7 @@ public sealed class Worker
         var deploymentId = deploymentResponse.Data?.CreateDeployment?.Deployment?.Id;
 
         if (deploymentId == null)
-            throw new Exception("Deployment.Id is null");
+            throw new ServiceException("Deployment.Id is null");
 
         var deploymentStatusResponse = await _githubClient.CreateDeploymentStatus
             .ExecuteAsync(new CreateDeploymentStatusInput
@@ -156,7 +157,7 @@ public sealed class Worker
 
     public async Task<int> CreateDeploymentAsync(CancellationToken cancellationToken = default)
     {
-        var options = _githubDeploymentsToolOptions.Value.Create ?? throw new Exception($"{nameof(AppOptions)}.{nameof(AppOptions.Create)} not set");
+        var options = _githubDeploymentsToolOptions.Value.Create ?? throw new ServiceException($"{nameof(AppOptions)}.{nameof(AppOptions.Create)} not set");
 
         var result = await CreateDeploymentInnerAsync(options, cancellationToken);
 
