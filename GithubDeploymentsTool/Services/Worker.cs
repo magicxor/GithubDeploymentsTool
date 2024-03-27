@@ -50,7 +50,12 @@ public sealed class Worker
                            && node.Environment == options.Environment
                            && $"{node.Ref?.Prefix}{node.Ref?.Name}" == options.Ref
                            && node.Task == options.Task
-                           && node.LatestStatus?.State == DeploymentStatusState.Success)
+                           && new List<DeploymentStatusState?>
+                               {
+                                   DeploymentStatusState.Success,
+                                   DeploymentStatusState.Inactive,
+                               }
+                               .Contains(node.LatestStatus?.State))
             .Select(node => node!)
             .ToList()
             .AsReadOnly() ?? ReadOnlyCollection<IListRepositoryDeployments_Repository_Deployments_Edges_Node>.Empty;
