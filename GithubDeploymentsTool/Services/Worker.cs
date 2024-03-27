@@ -45,7 +45,11 @@ public sealed class Worker
 
         var nodes = response.Data?.Repository?.Deployments.Edges?
             .Select(edge => edge?.Node)
-            .Where(node => node != null)
+            .Where(node => node != null
+                           && node.Environment == options.Environment
+                           && $"{node.Ref?.Prefix}{node.Ref?.Name}" == options.Ref
+                           && node.Task == options.Task
+                           && node.LatestStatus?.State == DeploymentStatusState.Success)
             .Select(node => node!)
             .ToList()
             .AsReadOnly() ?? ReadOnlyCollection<IListRepositoryDeployments_Repository_Deployments_Edges_Node>.Empty;
