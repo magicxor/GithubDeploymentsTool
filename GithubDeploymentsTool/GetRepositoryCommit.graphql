@@ -1,0 +1,29 @@
+query getRepositoryCommit ($owner: String!, $name: String!, $followRenames: Boolean!, $ref: String!) {
+    repository (owner: $owner, name: $name, followRenames: $followRenames) {
+        id
+        isArchived
+        isPrivate
+        name
+        nameWithOwner
+        url
+        visibility
+
+        ref (qualifiedName: $ref) {
+            id
+            name
+
+            target {
+                ...on Commit {
+                    id
+                    oid
+                    abbreviatedOid
+                    message
+                    author {
+                        name
+                    }
+                    url
+                }
+            }
+        }
+    }
+}

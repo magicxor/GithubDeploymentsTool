@@ -27,7 +27,7 @@ public sealed class Worker
     {
         var args = _githubDeploymentsToolOptions.Value.List ?? throw new Exception($"{nameof(AppOptions)}.{nameof(AppOptions.List)} not set");
 
-        var response = await _githubClient.RepositoryDeployments
+        var response = await _githubClient.ListRepositoryDeployments
             .ExecuteAsync(args.Owner, args.Repository, true, [args.Environment], cancellationToken);
 
         if (response.IsErrorResult())
@@ -45,22 +45,25 @@ public sealed class Worker
     {
         var args = _githubDeploymentsToolOptions.Value.Create ?? throw new Exception($"{nameof(AppOptions)}.{nameof(AppOptions.Create)} not set");
 
-        _logger.LogInformation("Requesting repository information. Owner: {Owner}, Repository: {Repository}", args.Owner, args.Repository);
+        _logger.LogInformation("Requesting repository commit information. Owner: {Owner}, Repository: {Repository}", args.Owner, args.Repository);
 
-        var repositoryResponse = await _githubClient.Repository
-            .ExecuteAsync(args.Owner, args.Repository, true, cancellationToken);
+        var repoCommitResponse = await _githubClient.GetRepositoryCommit
+            .ExecuteAsync(args.Owner, args.Repository, true, args.Ref, cancellationToken);
 
-        if (repositoryResponse.IsErrorResult())
+        if (repoCommitResponse.IsErrorResult())
         {
-            _logger.LogError("Error creating deployment. Errors: {Errors}",
-                JsonSerializer.Serialize(repositoryResponse.Errors, JsonSerializerOptions));
+            _logger.LogError("Error getting repository commit information. Errors: {Errors}",
+                JsonSerializer.Serialize(repoCommitResponse.Errors, JsonSerializerOptions));
+            return;
         }
 
-        _logger.LogInformation("Repository found. Id: {RepositoryId}", repositoryResponse.Data?.Repository?.Id);
+        var repositoryId = repoCommitResponse.Data?.Repository?.Id;
+        var repositoryRefId = repoCommitResponse.Data?.Repository?.Ref?.Id;
 
-        var repositoryId = repositoryResponse.Data?.Repository?.Id;
         if (repositoryId == null)
             throw new Exception("Repository not found");
+        if (repositoryRefId == null)
+            throw new Exception("Repository ref not found");
 
         var deploymentResponse = await _githubClient.CreateDeployment.ExecuteAsync(new CreateDeploymentInput
         {
@@ -68,7 +71,7 @@ public sealed class Worker
             Description = args.Description,
             Payload = args.Payload,
             Task = args.Task,
-            RefId = args.Ref,
+            RefId = repositoryRefId,
             RepositoryId = repositoryId,
         }, cancellationToken);
 

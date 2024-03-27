@@ -1,4 +1,4 @@
-﻿query repositoryDeployments ($owner: String!, $name: String!, $followRenames: Boolean, $environments: [String!]) {
+﻿query listRepositoryDeployments ($owner: String!, $name: String!, $followRenames: Boolean, $environments: [String!]) {
     repository (owner: $owner, name: $name, followRenames: $followRenames) {
         homepageUrl
         id
