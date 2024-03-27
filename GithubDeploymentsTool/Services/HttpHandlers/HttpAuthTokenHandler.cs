@@ -2,7 +2,7 @@
 using GithubDeploymentsTool.Models;
 using Microsoft.Extensions.Options;
 
-namespace GithubDeploymentsTool.Services;
+namespace GithubDeploymentsTool.Services.HttpHandlers;
 
 public class HttpAuthTokenHandler : DelegatingHandler
 {

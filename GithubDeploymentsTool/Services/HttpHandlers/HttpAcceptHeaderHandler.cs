@@ -1,6 +1,6 @@
 ﻿using System.Net.Http.Headers;
 
-namespace GithubDeploymentsTool.Services;
+namespace GithubDeploymentsTool.Services.HttpHandlers;
 
 public class HttpAcceptHeaderHandler : DelegatingHandler
 {

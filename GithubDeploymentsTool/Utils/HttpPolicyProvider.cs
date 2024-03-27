@@ -4,7 +4,7 @@ using Polly.Contrib.WaitAndRetry;
 using Polly.Extensions.Http;
 using Polly.Wrap;
 
-namespace GithubDeploymentsTool.Services;
+namespace GithubDeploymentsTool.Utils;
 
 public static class HttpPolicyProvider
 {
