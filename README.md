@@ -1,5 +1,12 @@
 # GithubDeploymentsTool
 
+## Usage
+
+* `list` - List deployments
+* `create` - Create a deployment
+
+Use `--help` to display the help screen.
+
 ## See also:
 
 ### GraphQL Clients
