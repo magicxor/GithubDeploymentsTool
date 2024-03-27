@@ -1,6 +1,6 @@
-﻿using GithubDeploymentsTool.Models.CommandLine;
+﻿using GithubDeploymentsTool.Models.Options.CommandLine;
 
-namespace GithubDeploymentsTool.Models;
+namespace GithubDeploymentsTool.Models.Options;
 
 public sealed class AppOptions
 {

@@ -1,5 +1,8 @@
+using System.Collections.ObjectModel;
 using System.Text.Json;
-using GithubDeploymentsTool.Models;
+using GithubDeploymentsTool.Models.Options;
+using GithubDeploymentsTool.Models.Options.CommandLine;
+using GithubDeploymentsTool.Models.Results;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using StrawberryShake;
@@ -8,6 +11,9 @@ namespace GithubDeploymentsTool.Services;
 
 public sealed class Worker
 {
+    private const int Success = 0;
+    private const int Error = 1;
+
     private static readonly JsonSerializerOptions JsonSerializerOptions = new() { WriteIndented = true };
 
     private readonly IOptions<AppOptions> _githubDeploymentsToolOptions;
@@ -23,92 +29,143 @@ public sealed class Worker
         _githubClient = githubClient;
     }
 
-    public async Task ListDeploymentsAsync(CancellationToken cancellationToken = default)
+    private async Task<ListDeploymentsApiResult> ListDeploymentsInnerAsync(ListDeploymentsOptions options, CancellationToken cancellationToken = default)
     {
-        var args = _githubDeploymentsToolOptions.Value.List ?? throw new Exception($"{nameof(AppOptions)}.{nameof(AppOptions.List)} not set");
-
         var response = await _githubClient.ListRepositoryDeployments
-            .ExecuteAsync(args.Owner, args.Repository, true, [args.Environment], cancellationToken);
+            .ExecuteAsync(options.Owner, options.Repository, true, [options.Environment], cancellationToken);
 
         if (response.IsErrorResult())
         {
-            _logger.LogError("Error creating deployment. Errors: {Errors}",
-                JsonSerializer.Serialize(response.Errors, JsonSerializerOptions));
+            return new ListDeploymentsApiResult(
+                response.IsSuccessResult(),
+                ReadOnlyCollection<IListRepositoryDeployments_Repository_Deployments_Edges_Node>.Empty,
+                response.Errors
+            );
         }
 
-        _logger.LogInformation("Repository deployments found. RepositoryId: {RepositoryId}, DeploymentsCount: {DeploymentsCount}", response.Data?.Repository?.Id, response.Data?.Repository?.Deployments.Edges?.Count);
-        _logger.LogInformation("Deployments list: {Deployments}", JsonSerializer.Serialize(response.Data?.Repository?.Deployments.Edges, JsonSerializerOptions));
+        var nodes = response.Data?.Repository?.Deployments.Edges?
+            .Select(edge => edge?.Node)
+            .Where(node => node != null)
+            .Select(node => node!)
+            .ToList()
+            .AsReadOnly() ?? ReadOnlyCollection<IListRepositoryDeployments_Repository_Deployments_Edges_Node>.Empty;
+
+        return new ListDeploymentsApiResult(
+            response.IsSuccessResult(),
+            nodes,
+            ReadOnlyCollection<IClientError>.Empty
+        );
     }
 
-    // https://docs.github.com/en/graphql/reference/mutations#createdeployment
-    public async Task CreateDeploymentAsync(CancellationToken cancellationToken = default)
+    public async Task<int> ListDeploymentsAsync(CancellationToken cancellationToken = default)
     {
-        var args = _githubDeploymentsToolOptions.Value.Create ?? throw new Exception($"{nameof(AppOptions)}.{nameof(AppOptions.Create)} not set");
+        var options = _githubDeploymentsToolOptions.Value.List ?? throw new Exception($"{nameof(AppOptions)}.{nameof(AppOptions.List)} not set");
 
-        _logger.LogInformation("Requesting repository commit information. Owner: {Owner}, Repository: {Repository}", args.Owner, args.Repository);
+        var result = await ListDeploymentsInnerAsync(options, cancellationToken);
+
+        if (result.IsSuccess)
+        {
+            _logger.LogInformation("Deployments: {Deployments}",
+                JsonSerializer.Serialize(result.Nodes, JsonSerializerOptions));
+            return Success;
+        }
+        else
+        {
+            _logger.LogError("Error listing deployments. Errors: {Errors}",
+                JsonSerializer.Serialize(result.Errors, JsonSerializerOptions));
+            return Error;
+        }
+    }
+
+    private async Task<CreateDeploymentApiResult> CreateDeploymentInnerAsync(CreateDeploymentOptions options, CancellationToken cancellationToken = default)
+    {
+        // see https://docs.github.com/en/graphql/reference/mutations#createdeployment
 
         var repoCommitResponse = await _githubClient.GetRepositoryCommit
-            .ExecuteAsync(args.Owner, args.Repository, true, args.Ref, cancellationToken);
+            .ExecuteAsync(options.Owner, options.Repository, true, options.Ref, cancellationToken);
 
         if (repoCommitResponse.IsErrorResult())
         {
-            _logger.LogError("Error getting repository commit information. Errors: {Errors}",
-                JsonSerializer.Serialize(repoCommitResponse.Errors, JsonSerializerOptions));
-            return;
+            return new CreateDeploymentApiResult(
+                repoCommitResponse.IsSuccessResult(),
+                string.Empty,
+                repoCommitResponse.Errors
+            );
         }
 
         var repositoryId = repoCommitResponse.Data?.Repository?.Id;
         var repositoryRefId = repoCommitResponse.Data?.Repository?.Ref?.Id;
 
         if (repositoryId == null)
-            throw new Exception("Repository not found");
+            throw new Exception("Repository.Id is null");
         if (repositoryRefId == null)
-            throw new Exception("Repository ref not found");
+            throw new Exception("Repository.Ref.Id is null");
 
         var deploymentResponse = await _githubClient.CreateDeployment.ExecuteAsync(new CreateDeploymentInput
         {
-            Environment = args.Environment,
-            Description = args.Description,
-            Payload = args.Payload,
-            Task = args.Task,
+            Environment = options.Environment,
+            Description = options.Description,
+            Payload = options.Payload,
+            Task = options.Task,
             RefId = repositoryRefId,
             RepositoryId = repositoryId,
         }, cancellationToken);
 
         if (deploymentResponse.IsErrorResult())
         {
-            _logger.LogError("Error creating deployment. Errors: {Errors}", JsonSerializer.Serialize(deploymentResponse.Errors, JsonSerializerOptions));
-            return;
-        }
-        else
-        {
-            _logger.LogInformation("Deployment created successfully. Id: {DeploymentId}, Environment: {Environment}, Description: {Description}, Task: {Task}",
-                deploymentResponse.Data?.CreateDeployment?.Deployment?.Id,
-                deploymentResponse.Data?.CreateDeployment?.Deployment?.Environment,
-                deploymentResponse.Data?.CreateDeployment?.Deployment?.Description,
-                deploymentResponse.Data?.CreateDeployment?.Deployment?.Task);
+            return new CreateDeploymentApiResult(
+                deploymentResponse.IsSuccessResult(),
+                string.Empty,
+                deploymentResponse.Errors
+            );
         }
 
         var deploymentId = deploymentResponse.Data?.CreateDeployment?.Deployment?.Id;
-        var clientMutationId = deploymentResponse.Data?.CreateDeployment?.ClientMutationId;
 
         if (deploymentId == null)
-            throw new Exception("Deployment not found");
+            throw new Exception("Deployment.Id is null");
 
         var deploymentStatusResponse = await _githubClient.CreateDeploymentStatus
             .ExecuteAsync(new CreateDeploymentStatusInput
             {
-                Environment = args.Environment,
-                Description = args.Description,
+                Environment = options.Environment,
+                Description = options.Description,
                 State = DeploymentStatusState.Success,
                 DeploymentId = deploymentId,
             }, cancellationToken);
 
         if (deploymentStatusResponse.IsErrorResult())
-            _logger.LogError("Error creating deployment status. Errors: {Errors}", JsonSerializer.Serialize(deploymentStatusResponse.Errors, JsonSerializerOptions));
+        {
+            return new CreateDeploymentApiResult(
+                deploymentStatusResponse.IsSuccessResult(),
+                string.Empty,
+                deploymentStatusResponse.Errors
+            );
+        }
+
+        return new CreateDeploymentApiResult(
+            deploymentStatusResponse.IsSuccessResult(),
+            deploymentId,
+            ReadOnlyCollection<IClientError>.Empty
+        );
+    }
+
+    public async Task<int> CreateDeploymentAsync(CancellationToken cancellationToken = default)
+    {
+        var options = _githubDeploymentsToolOptions.Value.Create ?? throw new Exception($"{nameof(AppOptions)}.{nameof(AppOptions.Create)} not set");
+
+        var result = await CreateDeploymentInnerAsync(options, cancellationToken);
+
+        if (result.IsSuccess)
+        {
+            _logger.LogInformation("Deployment created successfully. Id: {DeploymentId}", result.DeploymentId);
+            return Success;
+        }
         else
-            _logger.LogInformation("Deployment status created successfully. Id: {DeploymentStatusId}, State: {State}",
-                deploymentStatusResponse.Data?.CreateDeploymentStatus?.DeploymentStatus?.Id,
-                deploymentStatusResponse.Data?.CreateDeploymentStatus?.DeploymentStatus?.State);
+        {
+            _logger.LogError("Error creating deployment. Errors: {Errors}",
+                JsonSerializer.Serialize(result.Errors, JsonSerializerOptions));
+            return Error;
+        }
     }
 }

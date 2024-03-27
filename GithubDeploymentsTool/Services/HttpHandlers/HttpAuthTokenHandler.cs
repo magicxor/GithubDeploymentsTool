@@ -1,5 +1,6 @@
 ﻿using System.Net.Http.Headers;
-using GithubDeploymentsTool.Models;
+using GithubDeploymentsTool.Extensions;
+using GithubDeploymentsTool.Models.Options;
 using Microsoft.Extensions.Options;
 
 namespace GithubDeploymentsTool.Services.HttpHandlers;
@@ -15,7 +16,7 @@ public class HttpAuthTokenHandler : DelegatingHandler
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
-        var token = _appOptions.List?.Token ?? _appOptions.Create?.Token ?? string.Empty;
+        var token = _appOptions.GetToken();
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
         return await base.SendAsync(request, cancellationToken);
     }

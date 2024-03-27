@@ -2,8 +2,8 @@
 using CommandLine;
 using GithubDeploymentsTool.Enums;
 using GithubDeploymentsTool.Extensions;
-using GithubDeploymentsTool.Models;
-using GithubDeploymentsTool.Models.CommandLine;
+using GithubDeploymentsTool.Models.Options;
+using GithubDeploymentsTool.Models.Options.CommandLine;
 using GithubDeploymentsTool.Services;
 using GithubDeploymentsTool.Services.HttpHandlers;
 using GithubDeploymentsTool.Utils;
@@ -21,7 +21,6 @@ namespace GithubDeploymentsTool;
 public static class Program
 {
     // see: https://docs.microsoft.com/en-us/windows/desktop/Debug/system-error-codes
-    private const int Success = 0;
     private const int ErrorBadArguments = 160;
 
     private static readonly LoggingConfiguration LoggingConfiguration = new XmlLoggingConfiguration("nlog.config");
@@ -107,11 +106,11 @@ public static class Program
         var worker = BuildWorker(appOptions);
 
         if (appOptions.List != null)
-            await worker.ListDeploymentsAsync(cancelTokenSource.Token);
+            return await worker.ListDeploymentsAsync(cancelTokenSource.Token);
         else if (appOptions.Create != null)
-            await worker.CreateDeploymentAsync(cancelTokenSource.Token);
-
-        return Success;
+            return await worker.CreateDeploymentAsync(cancelTokenSource.Token);
+        else
+            throw new ArgumentException("No verb selected", nameof(appOptions));
     }
 
     private static async Task<int> OnListVerbAsync(ListDeploymentsOptions arg)

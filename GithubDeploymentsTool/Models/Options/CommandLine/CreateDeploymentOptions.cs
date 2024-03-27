@@ -1,17 +1,17 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using CommandLine;
 
-namespace GithubDeploymentsTool.Models.CommandLine;
+namespace GithubDeploymentsTool.Models.Options.CommandLine;
 
-// see https://docs.github.com/en/rest/deployments/deployments?apiVersion=2022-11-28#list-deployments
-[Verb("list", HelpText = "List deployments")]
-public sealed class ListDeploymentsOptions
+// see https://docs.github.com/en/rest/deployments/deployments?apiVersion=2022-11-28#create-a-deployment
+[Verb("create", HelpText = "Create a deployment")]
+public sealed class CreateDeploymentOptions
 {
     public string? this[string propertyName]
     {
         get
         {
-            var thisType = typeof(ListDeploymentsOptions);
+            var thisType = typeof(CreateDeploymentOptions);
             var propInfo = thisType.GetProperty(propertyName);
             return propInfo?.GetValue(this, null)?.ToString();
         }
@@ -40,4 +40,12 @@ public sealed class ListDeploymentsOptions
     [Required]
     [Option('k', "task", Required = true, HelpText = "The name of the task for the deployment (e.g., deploy or deploy:migrations).")]
     public required string Task { get; set; }
+
+    [Required]
+    [Option('p', "payload", Required = true, HelpText = "JSON payload with extra information about the deployment.")]
+    public required string Payload { get; set; }
+
+    [Required]
+    [Option('d', "description", Required = true, HelpText = "Short description of the deployment.")]
+    public required string Description { get; set; }
 }
