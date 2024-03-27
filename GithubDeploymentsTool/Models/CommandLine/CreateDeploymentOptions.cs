@@ -48,8 +48,4 @@ public sealed class CreateDeploymentOptions
     [Required]
     [Option('d', "description", Required = true, HelpText = "Short description of the deployment.")]
     public required string Description { get; set; }
-
-    [Required]
-    [Option('n', "production_environment", Required = true, HelpText = "Specifies if the given environment is one that end-users directly interact with. Default: true when environment is production and false otherwise.")]
-    public required bool ProductionEnvironment { get; set; }
 }

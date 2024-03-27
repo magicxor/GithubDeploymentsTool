@@ -77,8 +77,8 @@ public sealed class Worker
 
         if (deploymentResponse.IsErrorResult())
         {
-            _logger.LogError("Error creating deployment. Errors: {Errors}",
-                JsonSerializer.Serialize(deploymentResponse.Errors, JsonSerializerOptions));
+            _logger.LogError("Error creating deployment. Errors: {Errors}", JsonSerializer.Serialize(deploymentResponse.Errors, JsonSerializerOptions));
+            return;
         }
         else
         {
@@ -88,5 +88,27 @@ public sealed class Worker
                 deploymentResponse.Data?.CreateDeployment?.Deployment?.Description,
                 deploymentResponse.Data?.CreateDeployment?.Deployment?.Task);
         }
+
+        var deploymentId = deploymentResponse.Data?.CreateDeployment?.Deployment?.Id;
+        var clientMutationId = deploymentResponse.Data?.CreateDeployment?.ClientMutationId;
+
+        if (deploymentId == null)
+            throw new Exception("Deployment not found");
+
+        var deploymentStatusResponse = await _githubClient.CreateDeploymentStatus
+            .ExecuteAsync(new CreateDeploymentStatusInput
+            {
+                Environment = args.Environment,
+                Description = args.Description,
+                State = DeploymentStatusState.Success,
+                DeploymentId = deploymentId,
+            }, cancellationToken);
+
+        if (deploymentStatusResponse.IsErrorResult())
+            _logger.LogError("Error creating deployment status. Errors: {Errors}", JsonSerializer.Serialize(deploymentStatusResponse.Errors, JsonSerializerOptions));
+        else
+            _logger.LogInformation("Deployment status created successfully. Id: {DeploymentStatusId}, State: {State}",
+                deploymentStatusResponse.Data?.CreateDeploymentStatus?.DeploymentStatus?.Id,
+                deploymentStatusResponse.Data?.CreateDeploymentStatus?.DeploymentStatus?.State);
     }
 }

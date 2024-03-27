@@ -1,0 +1,14 @@
+﻿mutation CreateDeploymentStatus($input: CreateDeploymentStatusInput!) {
+  createDeploymentStatus(input: $input) {
+    clientMutationId
+    deploymentStatus {
+        id
+        state
+        creator {
+            login
+        }
+        createdAt
+        updatedAt
+    }
+  }
+}

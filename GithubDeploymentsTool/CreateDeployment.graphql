@@ -1,5 +1,7 @@
 ﻿mutation createDeployment($input: CreateDeploymentInput!) {
   createDeployment(input: $input) {
+    clientMutationId
+
     deployment {
       id
       environment

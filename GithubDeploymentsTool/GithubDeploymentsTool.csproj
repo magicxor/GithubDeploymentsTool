@@ -39,6 +39,9 @@
       <GraphQL Update="GetRepositoryCommit.graphql">
         <Generator>MSBuild:GenerateGraphQLCode</Generator>
       </GraphQL>
+      <GraphQL Update="CreateDeploymentStatus.graphql">
+        <Generator>MSBuild:GenerateGraphQLCode</Generator>
+      </GraphQL>
     </ItemGroup>
 
 </Project>
